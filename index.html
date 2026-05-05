@@ -2,19 +2,19 @@
 <html lang="pt-BR">
 	<head>
 		<meta charset="UTF-8" />
-		<link rel="icon" type="image/png" href="%BASE_URL%logo-ici.png" />
+		<link rel="icon" type="image/png" href="%BASE_URL%logo-osasco.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Portal do Cidadão</title>
+		<title>Portal de Eventos</title>
 		<script>
 			(function (l) {
-				if (l.search[1] === "/") {
+				if (l.search[1] === '/') {
 					var decoded = l.search
 						.slice(1)
-						.split("&")
+						.split('&')
 						.map(function (s) {
-							return s.replace(/~and~/g, "&");
+							return s.replace(/~and~/g, '&');
 						})
-						.join("?");
+						.join('?');
 					window.history.replaceState(
 						null,
 						null,
