@@ -11,25 +11,26 @@ import { defineConfig } from 'vite';
  * bytes to public/pdf.worker.js so dev + build serve it with a .js MIME type.
  */
 function pdfWorkerPublicJs(): Plugin {
-	const workerSource = path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.mjs');
-	const workerDest = path.resolve(__dirname, 'public/pdf.worker.js');
+  const workerSource = path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.mjs');
+  const workerDest = path.resolve(__dirname, 'public/pdf.worker.js');
 
-	return {
-		name: 'pdf-worker-public-js',
-		buildStart() {
-			copyFileSync(workerSource, workerDest);
-		},
-	};
+  return {
+    name: 'pdf-worker-public-js',
+    buildStart() {
+      copyFileSync(workerSource, workerDest);
+    },
+  };
 }
 
 // https://vite.dev/config/
 export default defineConfig({
-	plugins: [react(), tailwindcss(), pdfWorkerPublicJs()],
-	resolve: {
-		alias: {
-			'@': path.resolve(__dirname, './src'),
-			'@/features': path.resolve(__dirname, './src/features'),
-			'@/lib': path.resolve(__dirname, './src/lib'),
-		},
-	},
+  base: '/portal.eventos/',
+  plugins: [react(), tailwindcss(), pdfWorkerPublicJs()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@/features': path.resolve(__dirname, './src/features'),
+      '@/lib': path.resolve(__dirname, './src/lib'),
+    },
+  },
 });
