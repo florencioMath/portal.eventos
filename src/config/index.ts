@@ -6,7 +6,7 @@ export const CONFIG = {
 	BRAND_TITLE: 'Portal',
 	BRAND_SUBTITLE: 'Do Cidadão',
 	/** Caminho público ou importável do logo (navbar/footer) */
-	LOGO_SRC: '/logo-ici.png',
+	LOGO_SRC: `${import.meta.env.BASE_URL}logo-ici.png`,
 	CONTATO_TITULO: 'Contato',
 	CONTATO_DESCRICAO: 'Canais de atendimento do órgão responsável por este portal.',
 	CONTATO_TELEFONE: '(00) 0000-0000',

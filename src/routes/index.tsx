@@ -12,38 +12,41 @@ import { componentesRoutes } from '@/features/componentes';
 import { perfilRoutes } from '@/features/perfil';
 // [generate:import]
 
-export const router = createBrowserRouter([
-	// Rotas públicas (não requerem autenticação)
-	{
-		element: <PublicLayout />,
-		errorElement: <RouteErrorBoundary />,
-		children: [
-			...authRoutes,
-			...inicioRoutes,
-			...eventosRoutes,
-			// [generate:public-route]
-		],
-	},
+export const router = createBrowserRouter(
+	[
+		// Rotas públicas (não requerem autenticação)
+		{
+			element: <PublicLayout />,
+			errorElement: <RouteErrorBoundary />,
+			children: [
+				...authRoutes,
+				...inicioRoutes,
+				...eventosRoutes,
+				// [generate:public-route]
+			],
+		},
 
-	// Rotas privadas (requerem autenticação)
-	{
-		element: (
-			<PrivateGuard>
-				<PrivateLayout />
-			</PrivateGuard>
-		),
-		errorElement: <RouteErrorBoundary />,
-		children: [
-			...painelRoutes,
-			...perfilRoutes,
-			...componentesRoutes,
-			// [generate:private-route]
-		],
-	},
+		// Rotas privadas (requerem autenticação)
+		{
+			element: (
+				<PrivateGuard>
+					<PrivateLayout />
+				</PrivateGuard>
+			),
+			errorElement: <RouteErrorBoundary />,
+			children: [
+				...painelRoutes,
+				...perfilRoutes,
+				...componentesRoutes,
+				// [generate:private-route]
+			],
+		},
 
-	// Rota 404 - redireciona para home
-	{
-		path: '*',
-		element: <Navigate to='/inicio' replace />,
-	},
-]);
+		// Rota 404 - redireciona para home
+		{
+			path: '*',
+			element: <Navigate to='/inicio' replace />,
+		},
+	],
+	{ basename: import.meta.env.BASE_URL.replace(/\/$/, '') },
+);

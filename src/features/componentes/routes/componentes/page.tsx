@@ -22,6 +22,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/base/select';
+import { CONFIG } from '@/config';
 import type { ArquivoAnexo } from '@/lib/download-anexo';
 import { painelPath } from '@/features/painel/routes/painel/route';
 import { ArrowLeft } from 'lucide-react';
@@ -73,7 +74,10 @@ export function PaginaCatalogoComponentes() {
 				nome: 'logo-ici.png',
 				tipoMime: 'image/png',
 				tamanhoBytes: undefined,
-				url: `${typeof window !== 'undefined' ? window.location.origin : ''}/logo-ici.png`,
+				url:
+					typeof window !== 'undefined'
+						? `${window.location.origin}${CONFIG.LOGO_SRC}`
+						: CONFIG.LOGO_SRC,
 			},
 		],
 		[]
