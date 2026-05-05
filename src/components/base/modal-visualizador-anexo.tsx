@@ -8,7 +8,7 @@ import {
 } from '@/components/base/dialog';
 import { baixarAnexo, criarUrlParaVisualizacao, type ArquivoAnexo } from '@/lib/download-anexo';
 import { Download } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 
 type ModalVisualizadorAnexoProps = {
@@ -24,19 +24,17 @@ export function ModalVisualizadorAnexo({
 	anexo,
 	titulo = 'Visualizar anexo',
 }: ModalVisualizadorAnexoProps) {
-	const [urlObjeto, setUrlObjeto] = useState<string | null>(null);
+	const urlObjeto = useMemo(() => {
+		if (!aberto || !anexo) return null;
+		return criarUrlParaVisualizacao(anexo);
+	}, [aberto, anexo]);
 
 	useEffect(() => {
-		if (!aberto || !anexo) {
-			setUrlObjeto(null);
-			return;
-		}
-		const url = criarUrlParaVisualizacao(anexo);
-		setUrlObjeto(url);
+		const u = urlObjeto;
 		return () => {
-			if (url?.startsWith('blob:')) URL.revokeObjectURL(url);
+			if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
 		};
-	}, [aberto, anexo]);
+	}, [urlObjeto]);
 
 	const handleBaixar = async () => {
 		if (!anexo) return;

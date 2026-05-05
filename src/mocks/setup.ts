@@ -1,5 +1,6 @@
 import { api, apiPublicSilent, apiSilent } from '@/lib/api';
 import type { InternalAxiosRequestConfig } from 'axios';
+import { registrarMocksEventosPortal } from './eventos-portal-mock';
 import { DADOS_PERFIL_MOCK } from './dados-perfil';
 import { HISTORICO_COMPONENTES_DEMO } from './historico-componentes-demo';
 import { SENHA_MOCK, USUARIOS_MOCK } from './users';
@@ -261,6 +262,8 @@ export function habilitarMocks() {
 
 		return config;
 	});
+
+	registrarMocksEventosPortal(apiPublicSilent, api);
 }
 
 /**

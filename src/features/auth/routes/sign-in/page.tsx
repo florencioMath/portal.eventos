@@ -6,7 +6,7 @@ import { getApiError } from '@/lib/utils';
 import { SENHA_MOCK, USUARIOS_MOCK } from '@/mocks/users';
 import { Eye, EyeOff, MessageCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ServicoAutenticacao } from '../../api/service';
 import { signUpPath } from '../sign-up/route';
@@ -74,6 +74,14 @@ export const PaginaEntrar = () => {
 
 	const { entrar: registrarSessao } = useAutenticacao();
 	const navigate = useNavigate();
+	const location = useLocation();
+
+	const destinoAposLogin = () => {
+		const st = location.state as { from?: { pathname?: string; search?: string } } | null;
+		const p = st?.from?.pathname;
+		if (p && p.length > 0) return `${p}${st?.from?.search ?? ''}`;
+		return '/painel';
+	};
 
 	// Restaura estado persistido ao montar (reload de página)
 	useEffect(() => {
@@ -239,7 +247,7 @@ export const PaginaEntrar = () => {
 			clearWhatsappState();
 			registrarSessao(response.token, response.user);
 			toast.success('Bem-vindo de volta!');
-			navigate('/painel');
+			navigate(destinoAposLogin(), { replace: true });
 		} catch (error) {
 			toast.error(getApiError(error, 'Código inválido ou expirado. Tente novamente.'));
 		} finally {
@@ -262,7 +270,7 @@ export const PaginaEntrar = () => {
 			const response = await ServicoAutenticacao.entrar({ login: cleanLogin, senha });
 			registrarSessao(response.token, response.user);
 			toast.success('Bem-vindo de volta!');
-			navigate('/painel');
+			navigate(destinoAposLogin(), { replace: true });
 		} catch (error) {
 			toast.error(getApiError(error, 'CPF/Email ou senha incorretos. Tente novamente.'));
 			console.error(error);

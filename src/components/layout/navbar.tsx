@@ -42,7 +42,7 @@ export const Navbar = () => {
 
 	const publicNav: NavLink[] = [
 		{ label: 'Início', path: inicioPath },
-		{ label: 'Serviços', path: inicioPath, href: '#servicos' },
+		{ label: 'Eventos', path: inicioPath, href: '#eventos' },
 		{ label: 'Contato', path: inicioPath, href: '#contato' },
 	];
 

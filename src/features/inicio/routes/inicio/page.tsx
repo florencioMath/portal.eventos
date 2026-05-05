@@ -1,164 +1,125 @@
-import { Button } from '@/components/base/button';
-import { Card, CardContent } from '@/components/base/card';
 import { CONFIG } from '@/config';
-import { signInPath } from '@/features/auth/routes/sign-in/route';
-import { signUpPath } from '@/features/auth/routes/sign-up/route';
-import { painelPath } from '@/features/painel/routes/painel/route';
+import { CarrosselEventosHome } from '@/features/eventos/components/carrossel-eventos-home';
+import { CarrosselHeroDestaque } from '@/features/eventos/components/carrossel-hero-destaque';
+import { EventosApi, ImagensApi } from '@/features/eventos/api/eventos-api';
+import { imagemDtoParaDataUrl } from '@/features/eventos/lib/imagem-data-url';
+import { eventoListadoNoPortal } from '@/features/eventos/lib/visibilidade-evento';
+import type { EventoCadastroDto } from '@/features/eventos/types';
 import { useAutenticacao } from '@/hooks/use-autenticacao';
-import { BookOpen, ChevronRight, LayoutDashboard, LifeBuoy } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
-const exemplosServicos = [
-	{
-		id: '1',
-		titulo: 'Serviço digital A',
-		descricao: 'Descrição de exemplo. Substitua pelo serviço real ao estender o portal.',
-		icone: LayoutDashboard,
-	},
-	{
-		id: '2',
-		titulo: 'Serviço digital B',
-		descricao: 'Outro cartão ilustrativo para compor a grade da página inicial.',
-		icone: BookOpen,
-	},
-	{
-		id: '3',
-		titulo: 'Serviço digital C',
-		descricao: 'Após o login, o cidadão acessa o painel com os módulos configurados.',
-		icone: LifeBuoy,
-	},
-];
+type ItemCarrossel = {
+	evento: EventoCadastroDto;
+	capaUrl: string | null;
+};
 
 export const PaginaInicial = () => {
 	const { isAuthenticated } = useAutenticacao();
+	const [itens, setItens] = useState<ItemCarrossel[]>([]);
+	const [carregando, setCarregando] = useState(true);
+
+	useEffect(() => {
+		let cancelado = false;
+		(async () => {
+			try {
+				const todos = await EventosApi.listarPublicos();
+				const caps = await Promise.all(
+					todos.map(async (e) => {
+						const imgs = await ImagensApi.listarPorEvento(e.cdEventosCadastro);
+						const ord = [...imgs].sort((a, b) => a.ordemExibicao - b.ordemExibicao);
+						const cap = ord.find((i) => i.imagemPrincipal) ?? ord[0];
+						return imagemDtoParaDataUrl(cap);
+					})
+				);
+				if (!cancelado) {
+					setItens(todos.map((evento, i) => ({ evento, capaUrl: caps[i] ?? null })));
+				}
+			} catch {
+				if (!cancelado) {
+					toast.error('Não foi possível carregar os eventos.');
+					setItens([]);
+				}
+			} finally {
+				if (!cancelado) setCarregando(false);
+			}
+		})();
+		return () => {
+			cancelado = true;
+		};
+	}, []);
+
+	const listadosPortal = useMemo(
+		() => itens.filter((x) => eventoListadoNoPortal(x.evento)),
+		[itens]
+	);
+
+	const heroSlides = useMemo(() => {
+		const marcados = listadosPortal.filter((x) => Boolean(x.evento.eventoEmDestaque));
+		if (marcados.length > 0) return marcados;
+		return listadosPortal.slice(0, 1);
+	}, [listadosPortal]);
 
 	return (
 		<>
-			<section className='bg-primary/4 border-b'>
-				<section className='relative bg-primary overflow-hidden'>
-					<div className='absolute inset-0 bg-linear-to-br from-primary via-primary to-accent opacity-90' />
-					<div
-						className='absolute inset-0 opacity-10'
-						style={{
-							backgroundImage:
-								"url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/G%3E%3C/svg%3E\")",
-						}}
-					/>
-					<div className='w-full max-w-7xl mx-auto px-6 py-16 md:py-24 relative z-10 text-center'>
-						<h1 className='text-3xl md:text-5xl font-extrabold text-primary-foreground mb-3 tracking-tight'>
-							{CONFIG.PROJECT_LABEL}
-						</h1>
-						<p className='text-primary-foreground/80 text-base md:text-lg max-w-2xl mx-auto mb-8'>
-							{CONFIG.PROJECT_SUBTITLE}
-						</p>
-						<div className='flex flex-wrap gap-3 justify-center'>
-							{isAuthenticated ? (
-								<Button
-									size='lg'
-									variant='secondary'
-									className='rounded-full font-semibold px-6'
-									asChild>
-									<Link to={painelPath}>
-										<LayoutDashboard className='h-4 w-4 mr-2' />
-										Ir para o painel
-									</Link>
-								</Button>
-							) : (
-								<>
-									<Button
-										size='lg'
-										variant='secondary'
-										className='rounded-full font-semibold px-6'
-										asChild>
-										<Link to={signInPath}>
-											Entrar
-										</Link>
-									</Button>
-									<Button
-										size='lg'
-										variant='ghost'
-										className='rounded-full font-semibold px-6 text-primary-foreground border border-primary-foreground/30 hover:bg-primary-foreground/10'
-										asChild>
-										<Link to={signUpPath}>Criar conta</Link>
-									</Button>
-								</>
-							)}
-							<Button
-								size='lg'
-								variant='ghost'
-								className='rounded-full font-semibold px-6 text-primary-foreground border border-primary-foreground/30 hover:bg-primary-foreground/10'
-								asChild>
-								<a href='#servicos'>Ver serviços</a>
-							</Button>
-						</div>
+			{carregando ? (
+				<section className='relative min-h-[min(92vh,900px)] w-full overflow-hidden bg-background'>
+					<div className='flex min-h-[min(92vh,900px)] items-center justify-center bg-muted/40'>
+						<div className='h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent' />
 					</div>
 				</section>
-			</section>
-
-			<section id='servicos' className='flex-1'>
-				<div className='w-full max-w-7xl mx-auto px-6 py-12 md:py-16'>
-					<div className='text-center mb-8'>
-						<h2 className='text-xl md:text-2xl font-bold text-foreground mb-1'>
-							Serviços (exemplo)
-						</h2>
-						<p className='text-muted-foreground text-sm'>
-							Estes cartões são apenas ilustrativos. Adicione links reais ao implementar
-							cada serviço.
-						</p>
+			) : heroSlides.length > 0 ? (
+				<CarrosselHeroDestaque
+					slides={heroSlides}
+					isAuthenticated={isAuthenticated}
+					totalListadosNoPortal={listadosPortal.length}
+				/>
+			) : (
+				<section className='relative min-h-[min(92vh,900px)] w-full overflow-hidden bg-background'>
+					<div className='flex min-h-[min(70vh,640px)] flex-col items-center justify-center gap-6 px-6 text-center'>
+						<h1 className='text-3xl font-bold text-foreground md:text-4xl'>{CONFIG.PROJECT_LABEL}</h1>
+						<p className='max-w-md text-muted-foreground'>{CONFIG.PROJECT_SUBTITLE}</p>
+						<p className='text-sm text-muted-foreground'>Nenhum evento cadastrado no momento.</p>
 					</div>
+				</section>
+			)}
 
-					<div className='grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto'>
-						{exemplosServicos.map((s) => {
-							const Icone = s.icone;
-							return (
-								<div key={s.id} className='group'>
-									<Card className='h-full border-0 shadow-md hover:shadow-xl transition-all duration-300'>
-										<CardContent className='p-8 text-center space-y-4'>
-											<div className='h-14 w-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors'>
-												<Icone className='h-7 w-7 text-primary' />
-											</div>
-											<h3 className='font-bold text-foreground'>{s.titulo}</h3>
-											<p className='text-sm text-muted-foreground leading-relaxed'>
-												{s.descricao}
-											</p>
-											<span className='inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground'>
-												Exemplo <ChevronRight className='h-3.5 w-3.5' />
-											</span>
-										</CardContent>
-									</Card>
-								</div>
-							);
-						})}
-					</div>
+			<section id='eventos' className='scroll-mt-24 border-t bg-muted/25 py-12 md:py-16'>
+				<div className='mx-auto mb-10 max-w-6xl px-5 sm:px-8'>
+					<h2 className='text-2xl font-black tracking-tight text-foreground md:text-3xl'>Todos os eventos</h2>
+					<p className='mt-2 max-w-2xl text-sm text-muted-foreground md:text-base'>
+						Passe pelos cards automaticamente ou arraste para explorar. Cada evento abre a página de detalhes
+						com inscrição.
+					</p>
+				</div>
+
+				<div className='w-full px-3 sm:px-5 md:px-6'>
+					{carregando ? null : listadosPortal.length > 0 ? (
+						<CarrosselEventosHome itens={listadosPortal} />
+					) : null}
 				</div>
 			</section>
 
-			<section id='contato' className='bg-muted/50 border-t'>
-				<div className='w-full max-w-7xl mx-auto px-6 py-10'>
-					<div className='text-center mb-8'>
-						<h2 className='text-xl md:text-2xl font-bold text-foreground mb-1'>
-							{CONFIG.CONTATO_TITULO}
-						</h2>
-						<p className='text-muted-foreground text-sm'>{CONFIG.CONTATO_DESCRICAO}</p>
+			<section id='contato' className='scroll-mt-24 border-t bg-muted/50'>
+				<div className='mx-auto max-w-7xl px-6 py-10'>
+					<div className='mb-8 text-center'>
+						<h2 className='mb-1 text-xl font-bold text-foreground md:text-2xl'>{CONFIG.CONTATO_TITULO}</h2>
+						<p className='text-sm text-muted-foreground'>{CONFIG.CONTATO_DESCRICAO}</p>
 					</div>
-					<div className='grid grid-cols-1 md:grid-cols-2 gap-2 max-w-4xl mx-auto text-center'>
+					<div className='mx-auto grid max-w-4xl grid-cols-1 gap-2 text-center md:grid-cols-2'>
 						<div className='flex flex-col items-center gap-2'>
-							<div className='h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center'>
+							<div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary/10'>
 								<span className='text-lg'>📞</span>
 							</div>
-							<span className='font-semibold text-sm text-foreground'>Telefone</span>
-							<span className='text-sm text-muted-foreground'>
-								{CONFIG.CONTATO_TELEFONE}
-							</span>
+							<span className='text-sm font-semibold text-foreground'>Telefone</span>
+							<span className='text-sm text-muted-foreground'>{CONFIG.CONTATO_TELEFONE}</span>
 						</div>
 						<div className='flex flex-col items-center gap-2'>
-							<div className='h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center'>
+							<div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary/10'>
 								<span className='text-lg'>✉️</span>
 							</div>
-							<span className='font-semibold text-sm text-foreground'>E-mail</span>
-							<span className='text-sm text-muted-foreground'>
-								{CONFIG.CONTATO_EMAIL}
-							</span>
+							<span className='text-sm font-semibold text-foreground'>E-mail</span>
+							<span className='text-sm text-muted-foreground'>{CONFIG.CONTATO_EMAIL}</span>
 						</div>
 					</div>
 				</div>

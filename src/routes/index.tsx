@@ -5,6 +5,7 @@ import { PrivateLayout } from '../layouts/private-layout';
 import { PublicLayout } from '../layouts/public-layout';
 
 import { authRoutes } from '@/features/auth';
+import { eventosRoutes } from '@/features/eventos/routes/routes';
 import { inicioRoutes } from '@/features/inicio';
 import { painelRoutes } from '@/features/painel';
 import { componentesRoutes } from '@/features/componentes';
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
 		children: [
 			...authRoutes,
 			...inicioRoutes,
+			...eventosRoutes,
 			// [generate:public-route]
 		],
 	},
