@@ -79,7 +79,7 @@ export function DialogIngressosApresentacao({ item, open, onOpenChange, initialI
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-auto py-4'>
+				<div className='flex flex-1 flex-col items-center gap-4 overflow-auto py-4'>
 					<p className='text-center text-lg font-semibold leading-tight sm:text-2xl'>{evento.nomeEvento}</p>
 					<p className='text-center text-sm text-muted-foreground sm:text-base'>{realizacaoLabel}</p>
 					<p className='text-center text-sm'>
