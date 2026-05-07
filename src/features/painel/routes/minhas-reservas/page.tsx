@@ -2,6 +2,7 @@ import { Button } from '@/components/base/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CardInscricaoReservaAcoes } from '@/features/eventos/components/card-inscricao-reserva-acoes';
+import { ListaIngressosReserva } from '@/features/eventos/components/lista-ingressos-reserva';
 import { ListaPontosDeTrocaDetalhe } from '@/features/eventos/components/lista-pontos-de-troca-detalhe';
 import { ReservasApi } from '@/features/eventos/api/reservas-api';
 import {
@@ -307,6 +308,8 @@ export const PaginaMinhasReservas = () => {
 												)}
 											</CardContent>
 										</Card>
+
+										<ListaIngressosReserva item={item} onAtualizado={() => void recarregar()} />
 
 										<CardInscricaoReservaAcoes
 											evento={evento}

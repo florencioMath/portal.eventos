@@ -9,6 +9,7 @@ import type {
 	EventoAnexoDto,
 	EventoCadastroDto,
 	EventoReservaDto,
+	IngressoReservaDto,
 	MinhaReservaItemDto,
 } from '@/features/eventos/types';
 
@@ -29,7 +30,7 @@ function pathNormalizado(config: InternalAxiosRequestConfig): string {
 			/* ignore */
 		}
 	}
-	const marcas = ['/eventos', '/imagens', '/reservas'];
+	const marcas = ['/eventos', '/imagens', '/reservas', '/ingressos'];
 	for (const m of marcas) {
 		const i = p.indexOf(m);
 		if (i >= 0) return p.slice(i);
@@ -64,23 +65,68 @@ function cloneEvento(e: EventoCadastroDto): EventoCadastroDto {
 	return JSON.parse(JSON.stringify(e)) as EventoCadastroDto;
 }
 
-/** Exemplo: 1 ingresso no Show Ana Castela — ainda é possível retirar mais 1 (limite por CPF = 2). */
+/** Mock «Cidadão» + tokens QR genéricos em ciclo para qualquer evento (compatível com PNGs / Gestão). */
+const NOME_TITULAR_SEED = 'Cidadão';
+const DOC_TITULAR_SEED = '75526311201';
+
+const TOKENS_QR_MOCK_CICLO = [
+	'QRMOCK-CIDADAO-OZ-1',
+	'QRMOCK-CIDADAO-OZ-2',
+	'QRMOCK-CIDADAO-ANA-1',
+] as const;
+
+/** Repete os três tokens por bilhete (4.º volta ao primeiro). */
+function gerarIngressosGenericos(cdEventosReservas: string, quantidade: number): IngressoReservaDto[] {
+	const n = Math.max(0, Math.floor(quantidade));
+	const out: IngressoReservaDto[] = [];
+	for (let i = 0; i < n; i++) {
+		const ordem = i + 1;
+		const tokenQr = TOKENS_QR_MOCK_CICLO[i % TOKENS_QR_MOCK_CICLO.length]!;
+		out.push({
+			cdIngresso: novoId(),
+			cdEventosReservas,
+			ordem,
+			tokenQr,
+			nomeTitular: NOME_TITULAR_SEED,
+			documentoTitular: DOC_TITULAR_SEED,
+		});
+	}
+	return out;
+}
+
 let minhasReservasMock: MinhaReservaItemDto[] = (() => {
+	const evOz = eventos.find((x) => x.cdEventosCadastro === 'evt-oz-2026');
 	const evAna = eventos.find((x) => x.cdEventosCadastro === 'evt-ana-castela');
-	if (!evAna) return [];
+	if (!evOz || !evAna) return [];
+	const dataRes = agoraIso();
 	return [
 		{
 			reserva: {
-				cdEventosReservas: 'res-seed-demo',
+				cdEventosReservas: 'res-cidadao-oz-2026',
+				cdEventosCadastro: 'evt-oz-2026',
+				codigoReserva: 'R-OZ-2026-001',
+				quantidadeReservada: 2,
+				statusReserva: 'CONFIRMADA',
+				dataReserva: dataRes,
+				indiceLoteIngresso: 0,
+			},
+			evento: cloneEvento(evOz),
+			imagens: cloneJson(anexosPorEvento.get('evt-oz-2026') ?? []),
+			ingressos: gerarIngressosGenericos('res-cidadao-oz-2026', 2),
+		},
+		{
+			reserva: {
+				cdEventosReservas: 'res-cidadao-ana-pendente',
 				cdEventosCadastro: 'evt-ana-castela',
-				codigoReserva: 'R-DEMO002',
+				codigoReserva: 'R-ANA-PEND-001',
 				quantidadeReservada: 1,
 				statusReserva: 'CONFIRMADA',
-				dataReserva: agoraIso(),
+				dataReserva: dataRes,
 				indiceLoteIngresso: 0,
 			},
 			evento: cloneEvento(evAna),
 			imagens: cloneJson(anexosPorEvento.get('evt-ana-castela') ?? []),
+			ingressos: gerarIngressosGenericos('res-cidadao-ana-pendente', 1),
 		},
 	];
 })();
@@ -213,6 +259,7 @@ function tratar(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig 
 					reserva,
 					evento: atualizado,
 					imagens: imgs,
+					ingressos: gerarIngressosGenericos(reserva.cdEventosReservas, reserva.quantidadeReservada),
 				};
 				minhasReservasMock = minhasReservasMock.map((m, i) => (i === existenteIdx ? novoItem : m));
 				return reserva;
@@ -240,6 +287,7 @@ function tratar(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig 
 				reserva,
 				evento: atualizado,
 				imagens: imgs,
+				ingressos: gerarIngressosGenericos(reserva.cdEventosReservas, qtd),
 			};
 			minhasReservasMock = [item, ...minhasReservasMock];
 			return reserva;
@@ -279,7 +327,9 @@ function tratar(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig 
 				dataCancelamento: agoraIso(),
 			};
 			minhasReservasMock = minhasReservasMock.map((m, i) =>
-				i === itemIdx ? { ...m, reserva, evento: cloneEvento(atualizado) } : m
+				i === itemIdx
+					? { ...m, reserva, evento: cloneEvento(atualizado), ingressos: [] }
+					: m
 			);
 			propagarEventoNosItens(cdEv, atualizado);
 			return reserva;
@@ -346,10 +396,53 @@ function tratar(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig 
 				indiceLoteIngresso,
 			};
 			minhasReservasMock = minhasReservasMock.map((m, i) =>
-				i === itemIdx ? { ...m, reserva, evento: cloneEvento(atualizado) } : m
+				i === itemIdx
+					? {
+							...m,
+							reserva,
+							evento: cloneEvento(atualizado),
+							ingressos: gerarIngressosGenericos(reserva.cdEventosReservas, n),
+						}
+					: m
 			);
 			propagarEventoNosItens(cdEv, atualizado);
 			return reserva;
+		});
+	}
+
+	const mPatchIngresso = path.match(/^\/ingressos\/([^/]+)$/);
+	if (metodo === 'patch' && mPatchIngresso) {
+		const cdIngresso = decodeURIComponent(mPatchIngresso[1]!);
+		return aplicarRespostaMockada(config, () => {
+			const body = obterCorpo(config);
+			const nomeTitular =
+				body.nomeTitular != null && body.nomeTitular !== ''
+					? String(body.nomeTitular).trim()
+					: undefined;
+			const documentoTitularRaw = body.documentoTitular;
+			const documentoTitular =
+				documentoTitularRaw != null && documentoTitularRaw !== ''
+					? String(documentoTitularRaw).replace(/\D/g, '')
+					: undefined;
+
+			let encontrado: IngressoReservaDto | undefined;
+			minhasReservasMock = minhasReservasMock.map((item) => {
+				if (!item.ingressos?.length) return item;
+				const idx = item.ingressos.findIndex((i) => i.cdIngresso === cdIngresso);
+				if (idx < 0) return item;
+				const ing = item.ingressos[idx]!;
+				const atualizado: IngressoReservaDto = {
+					...ing,
+					...(nomeTitular !== undefined ? { nomeTitular } : {}),
+					...(documentoTitular !== undefined ? { documentoTitular } : {}),
+				};
+				encontrado = atualizado;
+				const novosIng = [...item.ingressos];
+				novosIng[idx] = atualizado;
+				return { ...item, ingressos: novosIng };
+			});
+			if (!encontrado) throw { status: 404, message: 'Ingresso não encontrado.' };
+			return encontrado;
 		});
 	}
 

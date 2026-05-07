@@ -115,11 +115,33 @@ export type EventoReservaDto = {
 	indiceLoteIngresso?: number;
 };
 
+/** Ingresso associado a uma reserva (detalhe por bilhete + token do QR). */
+export type IngressoReservaDto = {
+	cdIngresso: string;
+	cdEventosReservas: string;
+	/** Ordem na reserva (1-based, como no Gestão). */
+	ordem: number;
+	/** Texto exacto codificado no QR (payload enviado em `validar-leitura`). */
+	tokenQr: string;
+	nomeTitular: string;
+	/** CPF com 11 dígitos (sem máscara), alinhado ao mock do Gestão. */
+	documentoTitular: string;
+	retirado?: boolean;
+};
+
 /** Item enriquecido para o portal (minhas reservas). */
 export type MinhaReservaItemDto = {
 	reserva: EventoReservaDto;
 	evento: EventoCadastroDto;
 	imagens?: EventoAnexoDto[];
+	/** Quando a API devolve ingressos por bilhete (QR individual). */
+	ingressos?: IngressoReservaDto[];
+};
+
+/** Corpo de `PATCH /ingressos/{cdIngresso}` — dados do titular do ingresso. */
+export type IngressoTitularAtualizarPayload = {
+	nomeTitular?: string;
+	documentoTitular?: string;
 };
 
 export type ReservaCriarPayload = {
